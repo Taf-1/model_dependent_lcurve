@@ -1,0 +1,71 @@
+run_name: target_CO
+
+# One file per band. Columns: time t_exp flux f_err weight n_div
+light_curves:
+  u': light_curves/target_us.dat
+  g': light_curves/target_gs.dat
+  r': light_curves/target_rs.dat
+
+model_file: model_files/template.mod
+instrument: ucam
+period: 0.0808         # days, held fixed
+
+wd_core_comp: CO       # He | CO | ONe
+wd_model: Koester      # Koester | Bergeron
+ms_model: BT-SETTL     # BT-SETTL | BT-SETTL-CIFIST | PHOENIX-HiRes
+secondary_mr: empirical  # empirical | std | baraffe
+
+irr_infl: false        
+use_sed: false         
+
+flux_uncertainty:
+  u': 0.05
+  g': 0.03
+  r': 0.03
+
+model_settings:
+  delta_phase: 1.0e-7
+  primary_fine_resolution: 300
+  secondary_fine_resolution: 200
+  primary_coarse_resolution: 100
+  secondary_coarse_resolution: 100
+  true_north_pole: true
+  primary_roche: false
+  secondary_roche: true
+  primary_eclipse: true
+  secondary_eclipse: true
+
+# Starting values. These are seeds only - the posterior does not remember them.
+params:
+  m1: 0.60
+  m2: 0.20
+  t1: 20000.0
+  t2: 3200.0
+  incl: 86.0
+  t0: 58674.006198
+  parallax: 5.0
+
+param_bounds:
+  m1: [0.2, 1.35]
+  m2: [0.06, 0.60]
+  t1: [5000.0, 80000.0]
+  t2: [2300.0, 5000.0]
+  incl: [70.0, 90.0]
+  t0: [58674.0, 58674.01]
+  parallax: [0.1, 50.0]
+
+priors:
+  parallax: [gauss, 5.12, 0.08] 
+
+run_settings:
+  walkers: 100
+  burnin: 500
+  production: 5000
+  n_cores: 8
+
+seed_loggs: [7.9, 5.0]
+
+components:
+  disc: false
+  spot: false
+  secondary_eclipse: true
