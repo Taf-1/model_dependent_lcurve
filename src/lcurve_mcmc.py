@@ -1,8 +1,9 @@
+from __future__ import annotations
 import argparse
 import logging
 import os
 import shutil
-from multiprocessing import Pool
+from multiprocessing import get_context
 from pathlib import Path
 import emcee
 import numpy as np
@@ -12,6 +13,8 @@ import utils as ph
 from m_r_tracks import get_radius
 from lcurve_model import Rust_LCURVE
 from lc_logger import lcurve_logging
+
+os.nice(19) # lower priority for CPU-intensive tasks
 
 class Lcurve_MCMC:
 
@@ -27,6 +30,10 @@ class Lcurve_MCMC:
         self.bands = list(config["light_curves"].keys())
         self.parameter_names = tuple(config["params"].keys())
         self.bounds = config["param_bounds"]
+        self.secondary_model = config.get("secondary_model", "MS")
+        self.secondary_wd_core_comp = config.get("secondary_wd_core_comp", config["wd_core_comp"])
+        self.secondary_wd_model = config.get("secondary_wd_model", config.get("wd_model", "Koester"))
+        self.seeds = self.sed_seeds(config)
         if build_model_files:
             self.setup_model_files()
         self.beam_factors = {b: self.read_beam_factors(b) for b in self.bands}
@@ -36,19 +43,34 @@ class Lcurve_MCMC:
         self.geometry_dirty = True
         self.blobs = [np.nan] * len(self.BLOB_NAMES)
 
+    @staticmethod
+    def sed_seeds(config: dict) -> dict:
+        sed = config["sed"]
+        m1 = sed["m1"] if "m1" in sed else ph.mass_from_radius(sed["r1"], sed["t1"], config["wd_core_comp"])
+        if "m2" in sed:
+            m2 = sed["m2"]
+        elif config.get("secondary_model", "MS") == "WD":
+            sec_core = config.get("secondary_wd_core_comp", config["wd_core_comp"])
+            m2 = ph.mass_from_radius(sed["r2"], sed["t2"], sec_core)
+        else:
+            m2 = ph.ms_mass_from_radius(sed["r2"], config["secondary_mr"])
+        return {"m1": m1, "m2": m2, "t1": sed["t1"], "t2": sed["t2"],
+                "logg1": ph.log_g(m1, sed["r1"]), "logg2": ph.log_g(m2, sed["r2"])}
+
     def mod_path(self, band: str) -> str:
         tag = band.replace("'", "")
         return f"model_files/{self.target_name}_{tag}.mod"
 
     def setup_model_files(self) -> None:
         os.makedirs("model_files", exist_ok=True)
-        loggs = self.config["seed_loggs"]
+        loggs = [self.seeds["logg1"], self.seeds["logg2"]]
         opts = self.config.get("components", {})
         for band in self.bands:
             rl = Rust_LCURVE(self.logger, self.template_mod, self.config["light_curves"][band],
                              loggs, band, self.target_name,
                              disc=opts.get("disc", False), spot=opts.get("spot", False),
-                             secondary_eclipse=opts.get("secondary_eclipse", False))
+                             secondary_eclipse=opts.get("secondary_eclipse", False),
+                             secondary_model=self.secondary_model)
             rl.adjust_mod_config()
             rl.binary_model.model.write(self.mod_path(band))
             self.logger.info(f"Wrote {self.mod_path(band)}")
@@ -107,11 +129,15 @@ class Lcurve_MCMC:
     def geometry(self) -> dict:
         q = self.m2 / self.m1
         self.r1 = get_radius(self.m1, self.t1, star_type=self.config["wd_core_comp"])
-        self.r2 = get_radius(self.m2, star_type="MS", relation=self.config["secondary_mr"])
+        if self.secondary_model == "WD":
+            self.r2 = get_radius(self.m2, self.t2, star_type=self.secondary_wd_core_comp)
+        else:
+            self.r2 = get_radius(self.m2, star_type="MS", relation=self.config["secondary_mr"])
         self.logg1 = ph.log_g(self.m1, self.r1)
         self.logg2 = ph.log_g(self.m2, self.r2)
         self.a = ph.separation(self.m1, self.m2, self.period)
         r1_a = self.r1 / self.a
+        # lcurve wants the L1-facing radius for the secondary when roche2 is on
         r2_a = ph.rva_to_rl1(q, self.r2 / self.a)
         self.ffac = ph.fill_factor(q, r2_a)
         phase1 = float(np.arcsin(r1_a + r2_a) / (2 * np.pi) + 0.001)
@@ -120,13 +146,20 @@ class Lcurve_MCMC:
 
     def continuum(self, band: str) -> dict:
         a1, a2, a3, a4 = ph.get_ldcs(self.t1, self.logg1, band, "WD", self.instrument)
-        b1, b2, b3, b4 = ph.get_ldcs(self.t2, self.logg2, band, "MS", self.instrument)
+        if self.secondary_model == "WD":
+            b1, b2, b3, b4 = ph.get_ldcs(self.t2, self.logg2, band, "WD", self.instrument)
+            t2_bb = ph.get_tbb(self.t2, self.logg2, band, "WD", self.secondary_wd_model, self.instrument)
+            gdc2 = ph.get_gdc(self.t2, self.logg2, band, "WD")
+        else:
+            b1, b2, b3, b4 = ph.get_ldcs(self.t2, self.logg2, band, "MS", self.instrument)
+            t2_bb = ph.get_tbb(self.t2, self.logg2, band, "MS", self.config["ms_model"], self.instrument)
+            gdc2 = ph.get_gdc(self.t2, self.logg2, band, "MS")
         pars = {
             "t1": ph.get_tbb(self.t1, self.logg1, band, "WD", self.config["wd_model"], self.instrument),
-            "t2": ph.get_tbb(self.t2, self.logg2, band, "MS", self.config["ms_model"], self.instrument),
+            "t2": t2_bb,
             "wavelength": ph.pivot_wavelength(band, self.instrument),
             "gravity_dark1": ph.get_gdc(self.t1, self.logg1, band, "WD"),
-            "gravity_dark2": ph.get_gdc(self.t2, self.logg2, band, "MS"),
+            "gravity_dark2": gdc2,
             "ldc1_1": a1, "ldc1_2": a2, "ldc1_3": a3, "ldc1_4": a4,
             "ldc2_1": b1, "ldc2_2": b2, "ldc2_3": b3, "ldc2_4": b4,
         }
@@ -145,6 +178,16 @@ class Lcurve_MCMC:
                                                    d["flux"], d["f_err"], d["weight"])
         self.blobs = [self.logg1, self.logg2, self.r1, self.r2, self.a, self.ffac, lc.rva2]
         return lc
+
+    @property
+    def lightcurves(self) -> dict:
+        return self.data
+
+    def model(self, band: str, params) -> tuple:
+        self.set_parameter_vector(params)
+        lc = self.get_value(band)
+        d = self.data[band]
+        return d["time"], lc.total, d["flux"], d["f_err"]
 
     def log_prior(self) -> float:
         if not self.in_bounds():
@@ -175,31 +218,39 @@ class Lcurve_MCMC:
             for band in self.bands:
                 chisq += self.get_value(band).chi2
         except BaseException as err:
+            # invalid geometry comes back as a Rust PanicException, not an Exception
             if isinstance(err, (KeyboardInterrupt, SystemExit)):
                 raise
             return -np.inf, *nan_blobs
         return lp - 0.5 * chisq, *self.blobs
 
+
 _MODEL: Lcurve_MCMC | None = None
+
 
 def init_worker(config: dict) -> None:
     global _MODEL
     _MODEL = Lcurve_MCMC(logging.getLogger("lcurve_mcmc.worker"), config)
 
+
 def log_probability(params):
     return _MODEL.log_probability(params)
 
-def arg_parse() -> argparse.Namespace:
+
+def main() -> None:
+
     parser = argparse.ArgumentParser(description="Fit eclipse photometry with lcurve")
     parser.add_argument("--conf", "-c", required=True)
     parser.add_argument("--setup", action="store_true")
     parser.add_argument("--test", "-t", action="store_true")
     parser.add_argument("--fit", "-f", action="store_true")
+    parser.add_argument("--plot", "-p", action="store_true")
+    parser.add_argument("--nwalkers", type=int)
+    parser.add_argument("--nburn", type=int)
+    parser.add_argument("--nprod", type=int)
+    parser.add_argument("--nthreads", type=int)
     args = parser.parse_args()
-    return args
 
-def main() -> None:
-    args = arg_parse()
     yaml = YAML(typ="safe")
     with open(args.conf) as f:
         config = yaml.load(f)
@@ -211,8 +262,11 @@ def main() -> None:
         return
 
     names = list(config["params"].keys())
-    p_start = np.array(list(config["params"].values()), dtype=float)
+    seeds = Lcurve_MCMC.sed_seeds(config)
+    p_start = np.array([config["params"][n] if config["params"][n] is not None else seeds[n]
+                        for n in names], dtype=float)
     ndim = len(p_start)
+    logger.info("seeds: " + ", ".join(f"{n}={v:.5g}" for n, v in zip(names, p_start)))
 
     if args.test:
         init_worker(config)
@@ -221,13 +275,38 @@ def main() -> None:
         logger.info(str(dict(zip(Lcurve_MCMC.BLOB_NAMES, blobs))))
         return
 
-    if not args.fit:
-        parser.error("pass --setup, --test or --fit")
+    if args.plot:
+        import plotting
+        run_name = config["run_name"]
+        folder = os.path.join("MCMC_runs", run_name)
+        backend = emcee.backends.HDFBackend(os.path.join(folder, f"{run_name}.h5"), read_only=True)
+        chain = backend.get_chain()           # (nsteps, nwalkers, ndim)
+        flat_chain = backend.get_chain(flat=True)  # (nsteps*nwalkers, ndim)
 
-    nwalkers = run["walkers"]
-    nburn = run["burnin"]
-    nprod = run["production"]
-    nthreads = run["n_cores"]
+        trace_path = os.path.join(folder, f"{run_name}_traces.pdf")
+        plotting.plot_traces(chain, names, name=trace_path)
+        logger.info(f"Saved trace plot → {trace_path}")
+
+        corner_path = os.path.join(folder, f"{run_name}_corner.pdf")
+        plotting.plot_CP(flat_chain, names,
+                         composition=config.get("wd_core_comp", "CO"),
+                         name=corner_path)
+        logger.info(f"Saved corner plot → {corner_path}")
+
+        median_params = np.median(flat_chain, axis=0)
+        init_worker(config)
+        lc_path = os.path.join(folder, f"{run_name}_LC.pdf")
+        plotting.plot_LC(_MODEL, median_params, show=False, save=True, name=lc_path, phase_lim=0.05)
+        logger.info(f"Saved light curve plot → {lc_path}")
+        return
+
+    if not args.fit:
+        parser.error("pass --setup, --test, --fit or --plot")
+
+    nwalkers = args.nwalkers or run["walkers"]
+    nburn = args.nburn if args.nburn is not None else run["burnin"]
+    nprod = args.nprod or run["production"]
+    nthreads = args.nthreads or run["n_cores"]
 
     run_name = config["run_name"]
     folder = os.path.join("MCMC_runs", run_name)
@@ -235,20 +314,25 @@ def main() -> None:
     shutil.copyfile(args.conf, os.path.join(folder, f"{run_name}.yaml"))
 
     backend = emcee.backends.HDFBackend(os.path.join(folder, f"{run_name}.h5"))
-    if backend.iteration == 0:
+    try:
+        current_iter = backend.iteration
+    except (FileNotFoundError, OSError):
+        current_iter = 0
+
+    if current_iter == 0:
         backend.reset(nwalkers, ndim)
         scatter = 1e-3 * np.abs(p_start)
         if "t0" in names:
             scatter[names.index("t0")] = 1e-6
         p0 = p_start + scatter * np.random.randn(nwalkers, ndim)
     else:
-        logger.info(f"Resuming from step {backend.iteration}")
+        logger.info(f"Resuming from step {current_iter}")
         p0, nburn = None, 0
-        nprod -= backend.iteration
+        nprod -= current_iter
 
     dtype = [(n, float) for n in Lcurve_MCMC.BLOB_NAMES]
 
-    with Pool(nthreads, initializer=init_worker, initargs=(config,)) as pool:
+    with get_context("spawn").Pool(nthreads, initializer=init_worker, initargs=(config,)) as pool:
         sampler = emcee.EnsembleSampler(nwalkers, ndim, log_probability, pool=pool,
                                         backend=backend, blobs_dtype=dtype)
         if nburn > 0:

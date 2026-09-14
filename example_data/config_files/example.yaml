@@ -13,10 +13,11 @@ period: 0.0808         # days, held fixed
 wd_core_comp: CO       # He | CO | ONe
 wd_model: Koester      # Koester | Bergeron
 ms_model: BT-SETTL     # BT-SETTL | BT-SETTL-CIFIST | PHOENIX-HiRes
-secondary_mr: empirical  # empirical | std | baraffe
+secondary_model: MS    # MS | WD  (WD uses wd_model/wd_core_comp for the secondary)
+secondary_mr: empirical  # empirical | baraffe  (ignored when secondary_model: WD)
 
-irr_infl: false        
-use_sed: false         
+irr_infl: false        # needs physics.irradiate
+use_sed: false         # needs physics.integrate_disk
 
 flux_uncertainty:
   u': 0.05
@@ -24,23 +25,30 @@ flux_uncertainty:
   r': 0.03
 
 model_settings:
-  delta_phase: 1.0e-7
-  primary_fine_resolution: 300
-  secondary_fine_resolution: 200
-  primary_coarse_resolution: 100
-  secondary_coarse_resolution: 100
+  delta_phase: 3.0e-8
+  primary_fine_resolution: 50
+  secondary_fine_resolution: 150
+  primary_coarse_resolution: 50
+  secondary_coarse_resolution: 150
   true_north_pole: true
   primary_roche: false
   secondary_roche: true
   primary_eclipse: true
   secondary_eclipse: true
 
-# Starting values. These are seeds only - the posterior does not remember them.
-params:
-  m1: 0.60
-  m2: 0.20
+# Straight from speedyfit. Masses and log g are derived from these.
+sed:
+  r1: 0.0125
   t1: 20000.0
+  r2: 0.20
   t2: 3200.0
+
+# null means take the value from the sed block. Seeds only.
+params:
+  m1: null
+  m2: null
+  t1: null
+  t2: null
   incl: 86.0
   t0: 58674.006198
   parallax: 5.0
@@ -55,15 +63,13 @@ param_bounds:
   parallax: [0.1, 50.0]
 
 priors:
-  parallax: [gauss, 5.12, 0.08] 
+  parallax: [gauss, 5.12, 0.08]   # Gaia
 
 run_settings:
   walkers: 100
   burnin: 500
   production: 5000
   n_cores: 8
-
-seed_loggs: [7.9, 5.0]
 
 components:
   disc: false

@@ -1,4 +1,3 @@
-from __future__ import annotations
 import logging
 from typing import Sequence
 import numpy as np
@@ -29,7 +28,7 @@ class Rust_LCURVE:
         "cfrac_spot",
     )
     def __init__(self, logger: logging.Logger, mod_file: str, data_file: str, loggs: Sequence[float], filt: str, target_name: str,
-                    disc: bool, spot: bool, secondary_eclipse: bool) -> None:
+                    disc: bool, spot: bool, secondary_eclipse: bool, secondary_model: str = "MS") -> None:
         self.logger = logger
         self.mod_file = mod_file
         self.data_file = data_file
@@ -48,6 +47,7 @@ class Rust_LCURVE:
         self.disc = disc
         self.spot = spot
         self.secondary_eclipse = secondary_eclipse
+        self.secondary_model = secondary_model
 
     @staticmethod
     def read_mod_file(config: str, name: str) -> str:
@@ -68,7 +68,7 @@ class Rust_LCURVE:
         t1, t2 = model.t1.value, model.t2.value
         adj_mod = Adjust_Mod_Files(
             self.logger, float(t1), self.prim_logg, float(t2), self.sec_logg,
-            self.filt, self.target_name,
+            self.filt, self.target_name, sec_type=self.secondary_model,
         )
         a1, a2, a3, a4 = adj_mod.wd_limb_darkening()
         b1, b2, b3, b4 = adj_mod.comp_limb_darkening()

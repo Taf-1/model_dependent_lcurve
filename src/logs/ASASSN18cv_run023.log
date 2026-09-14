@@ -1,0 +1,66 @@
+2026-09-13 23:58:49 | lcurve_mcmc | INFO | Wrote model_files/ASASSN18cv_run023_u.mod
+2026-09-13 23:58:49 | lcurve_mcmc | INFO | Wrote model_files/ASASSN18cv_run023_g.mod
+2026-09-13 23:58:49 | lcurve_mcmc | INFO | Wrote model_files/ASASSN18cv_run023_r.mod
+2026-09-13 23:59:02 | lcurve_mcmc | INFO | seeds: m1=0.23493, m2=0.087273, t1=15000, t2=5400, incl=75, t0=60994, parallax=2.0205
+2026-09-13 23:59:02 | lcurve_mcmc | INFO | ln_prob = -63345.74595799264
+2026-09-13 23:59:02 | lcurve_mcmc | INFO | {'logg1': 6.8547590056205445, 'logg2': 5.296160804868027, 'r1': 0.029999999999999992, 'r2': 0.11, 'a': 0.5150418082789638, 'ffac': 0.6548110544242245, 'rva2': 0.24307737314348268}
+2026-09-13 23:59:35 | lcurve_mcmc | INFO | seeds: m1=0.23493, m2=0.087273, t1=15000, t2=5400, incl=75, t0=60994, parallax=2.0205
+2026-09-13 23:59:36 | lcurve_mcmc | INFO | ln_prob = -63345.74595799264
+2026-09-13 23:59:36 | lcurve_mcmc | INFO | {'logg1': 6.8547590056205445, 'logg2': 5.296160804868027, 'r1': 0.029999999999999992, 'r2': 0.11, 'a': 0.5150418082789638, 'ffac': 0.6548110544242245, 'rva2': 0.24307737314348268}
+2026-09-14 00:01:10 | lcurve_mcmc | INFO | Wrote model_files/ASASSN18cv_run023_u.mod
+2026-09-14 00:01:10 | lcurve_mcmc | INFO | Wrote model_files/ASASSN18cv_run023_g.mod
+2026-09-14 00:01:10 | lcurve_mcmc | INFO | Wrote model_files/ASASSN18cv_run023_r.mod
+2026-09-14 00:02:49 | lcurve_mcmc | INFO | seeds: m1=0.23493, m2=0.087273, t1=15000, t2=5400, incl=75, t0=60994, parallax=2.0205
+2026-09-14 00:02:49 | lcurve_mcmc | INFO | ln_prob = -63345.74595800023
+2026-09-14 00:02:49 | lcurve_mcmc | INFO | {'logg1': 6.8547590056205445, 'logg2': 5.296160804868027, 'r1': 0.029999999999999992, 'r2': 0.11, 'a': 0.515041808278964, 'ffac': 0.6548110544242244, 'rva2': 0.24307737314348268}
+2026-09-14 00:03:01 | lcurve_mcmc | INFO | seeds: m1=0.23493, m2=0.087273, t1=15000, t2=5400, incl=75, t0=60994, parallax=2.0205
+2026-09-14 00:04:26 | lcurve_mcmc | INFO | seeds: m1=0.23493, m2=0.087273, t1=15000, t2=5400, incl=75, t0=60994, parallax=2.0205
+2026-09-14 00:06:02 | lcurve_mcmc | INFO | seeds: m1=0.23493, m2=0.087273, t1=15000, t2=5400, incl=75, t0=60994, parallax=2.0205
+2026-09-14 00:06:02 | lcurve_mcmc | INFO | ln_prob = -63345.74595800023
+2026-09-14 00:06:02 | lcurve_mcmc | INFO | {'logg1': 6.8547590056205445, 'logg2': 5.296160804868027, 'r1': 0.029999999999999992, 'r2': 0.11, 'a': 0.515041808278964, 'ffac': 0.6548110544242244, 'rva2': 0.24307737314348268}
+2026-09-14 00:08:47 | lcurve_mcmc | INFO | seeds: m1=0.23493, m2=0.087273, t1=15000, t2=5400, incl=75, t0=60994, parallax=2.0205
+2026-09-14 04:56:56 | lcurve_mcmc | INFO | Mean acceptance: 0.185
+2026-09-14 04:56:57 | lcurve_mcmc | WARNING | Chain too short for a reliable autocorr time: The chain is shorter than 50 times the integrated autocorrelation time for 7 parameter(s). Use this estimate with caution and run a longer chain!
+N/50 = 100;
+tau: [377.38636821 366.85696101 320.79445884 234.61772348 354.67892181
+ 235.91194304 265.59186516]
+2026-09-14 08:55:04 | lcurve_mcmc | INFO | seeds: m1=0.23493, m2=0.087273, t1=15000, t2=5400, incl=75, t0=60994, parallax=2.0205
+2026-09-14 08:55:46 | lcurve_mcmc | INFO | seeds: m1=0.23493, m2=0.087273, t1=15000, t2=5400, incl=75, t0=60994, parallax=2.0205
+2026-09-14 08:55:50 | lcurve_mcmc | INFO | Saved trace plot → MCMC_runs/ASASSN18cv_run023/ASASSN18cv_run023_traces.pdf
+2026-09-14 08:55:55 | lcurve_mcmc | INFO | Saved corner plot → MCMC_runs/ASASSN18cv_run023/ASASSN18cv_run023_corner.pdf
+2026-09-14 08:57:35 | lcurve_mcmc | INFO | seeds: m1=0.23493, m2=0.087273, t1=15000, t2=5400, incl=75, t0=60994, parallax=2.0205
+2026-09-14 08:57:39 | lcurve_mcmc | INFO | Saved trace plot → MCMC_runs/ASASSN18cv_run023/ASASSN18cv_run023_traces.pdf
+2026-09-14 08:57:43 | lcurve_mcmc | INFO | Saved corner plot → MCMC_runs/ASASSN18cv_run023/ASASSN18cv_run023_corner.pdf
+2026-09-14 08:57:45 | lcurve_mcmc | INFO | Saved light curve plot → MCMC_runs/ASASSN18cv_run023/ASASSN18cv_run023_LC.pdf
+2026-09-14 09:18:43 | lcurve_mcmc | INFO | seeds: m1=0.23493, m2=0.087273, t1=15000, t2=5400, incl=75, t0=60994, parallax=2.0205
+2026-09-14 09:18:50 | lcurve_mcmc | INFO | Saved trace plot → MCMC_runs/ASASSN18cv_run023/ASASSN18cv_run023_traces.pdf
+2026-09-14 09:18:58 | lcurve_mcmc | INFO | Saved corner plot → MCMC_runs/ASASSN18cv_run023/ASASSN18cv_run023_corner.pdf
+2026-09-14 09:19:01 | lcurve_mcmc | INFO | Saved light curve plot → MCMC_runs/ASASSN18cv_run023/ASASSN18cv_run023_LC.pdf
+2026-09-14 11:20:15 | lcurve_mcmc | INFO | seeds: m1=0.23493, m2=0.087273, t1=15000, t2=5400, incl=75, t0=60994, parallax=2.0205
+2026-09-14 11:20:15 | lcurve_mcmc | INFO | ln_prob = -63348.2305077284
+2026-09-14 11:20:15 | lcurve_mcmc | INFO | {'logg1': 6.8547590056205445, 'logg2': 5.296160804868027, 'r1': 0.029999999999999992, 'r2': 0.11, 'a': 0.515041808278964, 'ffac': 0.6548110544242244, 'rva2': 0.24307737314348268}
+2026-09-14 11:20:23 | lcurve_mcmc | INFO | seeds: m1=0.23493, m2=0.087273, t1=15000, t2=5400, incl=75, t0=60994, parallax=2.0205
+2026-09-14 11:20:23 | lcurve_mcmc | INFO | Resuming from step 5000
+2026-09-14 11:20:23 | lcurve_mcmc | INFO | Mean acceptance: 0.185
+2026-09-14 11:20:23 | lcurve_mcmc | WARNING | Chain too short for a reliable autocorr time: The chain is shorter than 50 times the integrated autocorrelation time for 7 parameter(s). Use this estimate with caution and run a longer chain!
+N/50 = 100;
+tau: [377.38636821 366.85696101 320.79445884 234.61772348 354.67892181
+ 235.91194304 265.59186516]
+2026-09-14 11:20:46 | lcurve_mcmc | INFO | seeds: m1=0.23493, m2=0.087273, t1=15000, t2=5400, incl=75, t0=60994, parallax=2.0205
+2026-09-14 11:20:50 | lcurve_mcmc | INFO | Saved trace plot → MCMC_runs/ASASSN18cv_run023/ASASSN18cv_run023_traces.pdf
+2026-09-14 11:20:55 | lcurve_mcmc | INFO | Saved corner plot → MCMC_runs/ASASSN18cv_run023/ASASSN18cv_run023_corner.pdf
+2026-09-14 11:20:56 | lcurve_mcmc | INFO | Saved light curve plot → MCMC_runs/ASASSN18cv_run023/ASASSN18cv_run023_LC.pdf
+2026-09-14 11:22:25 | lcurve_mcmc | INFO | seeds: m1=0.23493, m2=0.087273, t1=15000, t2=5400, incl=75, t0=60994, parallax=2.0205
+2026-09-14 11:41:42 | lcurve_mcmc | INFO | seeds: m1=0.25246, m2=0.087273, t1=15000, t2=5400, incl=75, t0=60994, parallax=2.0205
+2026-09-14 11:41:42 | lcurve_mcmc | INFO | Resuming from step 277
+2026-09-14 11:42:06 | lcurve_mcmc | INFO | seeds: m1=0.25246, m2=0.087273, t1=15000, t2=5400, incl=75, t0=60994, parallax=2.0205
+2026-09-14 14:14:47 | lcurve_mcmc | INFO | seeds: m1=0.25246, m2=0.087273, t1=15000, t2=5400, incl=75, t0=60994, parallax=2.0205
+2026-09-14 14:51:36 | lcurve_mcmc | INFO | Mean acceptance: 0.249
+2026-09-14 14:51:36 | lcurve_mcmc | WARNING | Chain too short for a reliable autocorr time: The chain is shorter than 50 times the integrated autocorrelation time for 7 parameter(s). Use this estimate with caution and run a longer chain!
+N/50 = 20;
+tau: [110.5918673  108.9566712  108.1724607  118.20961043  78.73848195
+  83.84057448 121.0998431 ]
+2026-09-14 15:06:33 | lcurve_mcmc | INFO | seeds: m1=0.25246, m2=0.087273, t1=15000, t2=5400, incl=75, t0=60994, parallax=2.0205
+2026-09-14 15:06:35 | lcurve_mcmc | INFO | Saved trace plot → MCMC_runs/ASASSN18cv_run023/ASASSN18cv_run023_traces.pdf
+2026-09-14 15:06:37 | lcurve_mcmc | INFO | Saved corner plot → MCMC_runs/ASASSN18cv_run023/ASASSN18cv_run023_corner.pdf
+2026-09-14 15:06:38 | lcurve_mcmc | INFO | Saved light curve plot → MCMC_runs/ASASSN18cv_run023/ASASSN18cv_run023_LC.pdf

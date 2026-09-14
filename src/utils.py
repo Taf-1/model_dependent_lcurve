@@ -1,3 +1,4 @@
+from __future__ import annotations
 import functools
 from pathlib import Path
 import numpy as np
@@ -119,5 +120,51 @@ def cache_wd_gdcs(bands: tuple[str, ...] = ("u'", "g'", "r'")) -> None:
 def pivot_wavelength(band: str, instrument: str = "ucam") -> float:
     wave, trans = np.loadtxt(DATA / "filter_profiles" / f"{instrument}_{BAND_SUFFIX[band]}.txt",
                              usecols=(0, 1), unpack=True)
-    lam = np.sqrt(np.trapezoid(wave * trans, wave) / np.trapezoid(trans / wave, wave))
+    lam = np.sqrt(np.trapz(wave * trans, wave) / np.trapz(trans / wave, wave))
     return float(lam / 10.0)
+
+
+WD_MASS_RANGE = {"He": (0.150, 0.500), "CO": (0.200, 1.200), "ONe": (1.060, 1.350)}
+
+
+def mass_from_radius(r: float, teff: float, star_type: str = "CO") -> float:
+    from m_r_tracks import get_radius
+    m_lo, m_hi = WD_MASS_RANGE[star_type]
+
+    def radius(m):
+        try:
+            return get_radius(m, teff, star_type=star_type)
+        except ValueError:
+            return np.nan
+
+    grid = np.linspace(m_lo, m_hi, 200)
+    rad = np.array([radius(m) for m in grid])
+    ok = np.isfinite(rad)
+    if ok.sum() < 2:
+        raise ValueError(f"{star_type} track has no coverage at Teff={teff:.0f}")
+    grid, rad = grid[ok], rad[ok]
+
+    if not rad.min() <= r <= rad.max():
+        raise ValueError(f"R={r:.5f} at Teff={teff:.0f} is outside the {star_type} track "
+                         f"(M {grid.min():.3f}-{grid.max():.3f} gives R {rad.min():.5f}-{rad.max():.5f})")
+
+    i = int(np.argmin(np.abs(rad - r)))
+    lo = grid[max(i - 1, 0)]
+    hi = grid[min(i + 1, grid.size - 1)]
+    if (radius(lo) - r) * (radius(hi) - r) > 0.0:
+        return float(grid[i])
+    return float(brentq(lambda m: radius(m) - r, lo, hi, xtol=1e-6))
+
+
+def logg_from_radius(r: float, teff: float, star_type: str = "CO") -> float:
+    return log_g(mass_from_radius(r, teff, star_type), r)
+
+
+def ms_mass_from_radius(r: float, relation: str = "empirical") -> float:
+    from m_r_tracks import TRACKS
+    if relation != "empirical":
+        raise ValueError("only the empirical M-dwarf relation can be inverted directly")
+    m, rad = np.loadtxt(TRACKS / "MdwarfMRrel.dat", unpack=True)
+    if not rad.min() <= r <= rad.max():
+        raise ValueError(f"R={r:.4f} outside the M-dwarf relation (R {rad.min():.4f}-{rad.max():.4f})")
+    return float(np.interp(r, rad, m))

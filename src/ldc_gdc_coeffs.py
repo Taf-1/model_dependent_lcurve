@@ -3,25 +3,22 @@ import os
 from pathlib import Path
 import numpy as np
 from scipy.interpolate import LinearNDInterpolator, NearestNDInterpolator
-from astroquery.vizier import Vizier
 from astropy.table import Table
 import astropy.io.ascii as ascii
-
-Vizier.VIZIER_SERVER = "vizier.cfa.harvard.edu"
 
 DATA = Path(__file__).resolve().parent / "data"
 
 class Adjust_Mod_Files:
     BAND_INDEX_MAP = {"u'": 1, "g'": 2, "r'": 3}
     FILT_SUFFIX = {"u'": "us", "g'": "gs", "r'": "rs"}
-    _wd_gdc_cat: Table | None = None
 
-    def __init__(self, logger: logging.Logger, wd_temp: float, wd_logg: float, comp_temp: float, comp_logg: float, filt: str, tar_name: str) -> None:
+    def __init__(self, logger: logging.Logger, wd_temp: float, wd_logg: float, comp_temp: float, comp_logg: float, filt: str, tar_name: str, sec_type: str = "MS") -> None:
         self.logger = logger
         self.wd_temp = wd_temp
         self.wd_logg = wd_logg
         self.comp_temp = comp_temp
         self.comp_logg = comp_logg
+        self.sec_type = sec_type
         if filt not in self.BAND_INDEX_MAP:
             self.logger.error(f"Invalid filter: {filt}. Must be one of {list(self.BAND_INDEX_MAP)}")
             raise ValueError(f"Invalid filter: {filt}. Must be one of {list(self.BAND_INDEX_MAP)}")
@@ -29,14 +26,6 @@ class Adjust_Mod_Files:
         self.tar_name = tar_name
         self.band_index = self.BAND_INDEX_MAP[filt]
         self.suffix = self.FILT_SUFFIX[filt]
-
-    @classmethod
-    def query_vizier(cls, logger: logging.Logger, vizier_catalogue: str) -> Table:
-        if cls._wd_gdc_cat is None:
-            Vizier.ROW_LIMIT = 500000
-            cls._wd_gdc_cat = Vizier.get_catalogs(vizier_catalogue)[0]
-            logger.debug(f"Queried the {vizier_catalogue} catalogue ...")
-        return cls._wd_gdc_cat
 
     @staticmethod
     def interp(logger: logging.Logger, points: np.ndarray, values: np.ndarray, query: np.ndarray, label: str) -> np.ndarray:
@@ -70,22 +59,29 @@ class Adjust_Mod_Files:
         return self.limb_darkening("WD")
 
     def comp_limb_darkening(self) -> tuple[float, float, float, float]:
-        return self.limb_darkening("MS")
+        return self.limb_darkening(self.sec_type)
 
     def wd_gravity_darkening(self) -> float:
-        data = self.query_vizier(self.logger, "J/A+A/634/A93/tabley")
-        filt_data = data[(data["Filter"] == self.filt) & (data["Mod"] == "DA")]
-        if len(filt_data) == 0:
-            raise ValueError(f"No DA gravity-darkening rows for filter {self.filt}")
-        y1, y2 = self.itp(self.logger, filt_data, self.wd_logg, self.wd_temp, 'gdc')
-        return y1 + y2
-
-    def comp_gravity_darkening(self) -> float:
-        gdcs = ascii.read(DATA / "gravity_darkening_coeffs" / f"MS_GDCs_{self.suffix}.dat")
+        path = DATA / "gravity_darkening_coeffs" / f"DA_GDCs_{self.suffix}.dat"
+        if not path.exists():
+            raise FileNotFoundError(
+                f"{path} not found. Run utils.cache_wd_gdcs() once to build it."
+            )
+        gdcs = ascii.read(path)
         points = np.column_stack([np.array(gdcs['Teff'], dtype=float),
                                   np.array(gdcs['log(g)'], dtype=float)])
         values = np.array(gdcs['y'], dtype=float)
-        y = self.interp(self.logger, points, values, np.array([[self.comp_temp, self.comp_logg]]), 'MS gdc')
+        y = self.interp(self.logger, points, values,
+                        np.array([[self.wd_temp, self.wd_logg]]), 'WD gdc')
+        return float(np.atleast_1d(y)[0])
+
+    def comp_gravity_darkening(self) -> float:
+        tag = "DA" if self.sec_type == "WD" else "MS"
+        gdcs = ascii.read(DATA / "gravity_darkening_coeffs" / f"{tag}_GDCs_{self.suffix}.dat")
+        points = np.column_stack([np.array(gdcs['Teff'], dtype=float),
+                                  np.array(gdcs['log(g)'], dtype=float)])
+        values = np.array(gdcs['y'], dtype=float)
+        y = self.interp(self.logger, points, values, np.array([[self.comp_temp, self.comp_logg]]), f'{tag} gdc')
         return float(np.atleast_1d(y)[0])
 
     @staticmethod
@@ -115,17 +111,18 @@ class Adjust_Mod_Files:
             F_nu = flux_spec * wave_spec ** 2 / c_Apers
             order = np.argsort(nu)
             alpha = np.empty_like(wave_spec)
-            alpha[order] = np.gradient(np.log(F_nu[order]), np.log(nu[order]))
+            with np.errstate(divide="ignore", invalid="ignore"):
+                alpha[order] = np.gradient(np.log(F_nu[order]), np.log(nu[order]))
             B = 3.0 - alpha
             w = T * wave_spec * flux_spec
             inband = w > 0
-            B_mean = np.trapezoid((w * B)[inband], wave_spec[inband]) / np.trapezoid(w[inband], wave_spec[inband])
+            B_mean = np.trapz((w * B)[inband], wave_spec[inband]) / np.trapz(w[inband], wave_spec[inband])
             beam_facts.append(float(B_mean))
         self.logger.debug(f"Calculated photon-weighted <3 - alpha> for both primary and companion: {beam_facts}")
         return beam_facts[0], beam_facts[1]
 
     def pivot_wave(self) -> float:
         wave, T = self.transmission()
-        lambda_pivot = np.sqrt(np.trapezoid(wave * T, wave) / np.trapezoid(T / wave, wave))
+        lambda_pivot = np.sqrt(np.trapz(wave * T, wave) / np.trapz(T / wave, wave))
         self.logger.debug(f"Calculated a pivot wavelength of {lambda_pivot / 10}")
         return float(lambda_pivot / 10)
