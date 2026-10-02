@@ -13,8 +13,10 @@ period: 0.0808         # days, held fixed
 wd_core_comp: CO       # He | CO | ONe
 wd_model: Koester      # Koester | Bergeron
 ms_model: BT-SETTL     # BT-SETTL | BT-SETTL-CIFIST | PHOENIX-HiRes
-secondary_model: MS    # MS | WD  (WD uses wd_model/wd_core_comp for the secondary)
-secondary_mr: empirical  # empirical | baraffe  (ignored when secondary_model: WD)
+secondary_model: MS    # MS | WD | donor | sdB  (donor=Roche-lobe-filling; sdB=free r2 with WD atm)
+secondary_mr: empirical  # empirical | baraffe  (ignored when secondary_model: WD, donor, or sdB)
+# donor_atm: MS        # MS | WD  — atmosphere tables for donor (default MS; WD for AM CVn)
+# sdB note: add r2 to params/param_bounds when using secondary_model: sdB
 
 irr_infl: false        # needs physics.irradiate
 use_sed: false         # needs physics.integrate_disk
@@ -70,6 +72,9 @@ run_settings:
   burnin: 500
   production: 5000
   n_cores: 8
+  init_scatter:
+    default: 0.03
+    t0: 1e-6
 
 components:
   disc: false

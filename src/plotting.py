@@ -113,6 +113,9 @@ def plot_LC(model, params, show=True, save=False, name='LC.pdf', dataname=None, 
             mask = np.abs(phase) <= phase_lim
             phase, t, ym, y, ye = phase[mask], t[mask], ym[mask], y[mask], ye[mask]
 
+        sort_idx = np.argsort(phase)
+        phase, t, ym, y, ye = phase[sort_idx], t[sort_idx], ym[sort_idx], y[sort_idx], ye[sort_idx]
+
         if idx == 0:
             ax0 = fig.add_subplot(gs[:3, 0])
             ax = ax0
@@ -130,7 +133,6 @@ def plot_LC(model, params, show=True, save=False, name='LC.pdf', dataname=None, 
             ax.errorbar(phase, y*1e3, yerr=ye*1e3, lw=0, elinewidth=1,
                         marker='.', ms=3, zorder=1, color=band_colours[band])
             ax.plot(phase, ym*1e3, 'k-', lw=0.7, zorder=2)
-            ax.axhline(0, c='k', ls='-', lw=0.3, zorder=2)
             ax.tick_params(top=False, bottom=True, left=True, right=True, direction='in')
             y_mid = (np.max(ax.get_ylim()) + np.min(ax.get_ylim())) / 2
             plt.setp(ax.get_xticklabels(), visible=False)
@@ -142,9 +144,9 @@ def plot_LC(model, params, show=True, save=False, name='LC.pdf', dataname=None, 
             ax.axhline(0, c='k', ls='--', zorder=2)
             ax.tick_params(top=True, bottom=True, left=True, right=True, direction='in')
             yabs_max_res = np.max(np.abs(ax.get_ylim()))
-            ax.set_ylim([-4.0, 4.0])
-            ax.set_yticks([-3.0, 0.0, 3.0])
-            ax.set_yticklabels([r'$-3\sigma$', '0', r'$3\sigma$'])
+            ax.set_ylim([-5.0, 5.0])
+            ax.set_yticks([-5.0, 0.0, 5.0])
+            ax.set_yticklabels([r'$-5\sigma$', '0', r'$5\sigma$'])
         if idx_half != 0:
             plt.setp(ax.get_yticklabels(), visible=False)
 
@@ -209,6 +211,11 @@ def plot_LC_GP(model, params, show=True, save=False, name='LC.pdf', dataname=Non
         
         phase = t2phase(t, params[t0_idx], model.config['period'])
 
+        sort_idx = np.argsort(phase)
+        phase, t, ym, gp_mean, gp_var, y, ye = (phase[sort_idx], t[sort_idx], ym[sort_idx],
+                                                  gp_mean[sort_idx], gp_var[sort_idx],
+                                                  y[sort_idx], ye[sort_idx])
+
         if idx == 0:
             ax0 = fig.add_subplot(gs[:3, 0])
             ax = ax0
@@ -228,7 +235,6 @@ def plot_LC_GP(model, params, show=True, save=False, name='LC.pdf', dataname=Non
             ax.plot(phase, (ym+gp_mean)*1e3, 'k-', lw=0.7, zorder=2)
             ax.plot(phase, gp_mean*1e3, 'k-', lw=0.7, zorder=2)
             ax.plot(phase, ym*1e3, 'k-', lw=0.7, zorder=2)
-            ax.axhline(0, c='k', ls='-', lw=0.3, zorder=2)
             ax.tick_params(top=False, bottom=True, left=True, right=True, direction='in')
             y_mid = (np.max(ax.get_ylim()) + np.min(ax.get_ylim())) / 2
             plt.setp(ax.get_xticklabels(), visible=False)
@@ -240,7 +246,7 @@ def plot_LC_GP(model, params, show=True, save=False, name='LC.pdf', dataname=Non
             ax.axhline(0, c='k', ls='--', zorder=2)
             ax.tick_params(top=True, bottom=True, left=True, right=True, direction='in')
             yabs_max_res = np.max(np.abs(ax.get_ylim()))
-            ax.set_ylim([-4.0, 4.0])
+            ax.set_ylim([-5.0, 5.0])
             ax.set_yticks([-3.0, 0.0, 3.0])
             ax.set_yticklabels([r'$-3\sigma$', '0', r'$3\sigma$'])
         if idx_half != 0:
@@ -313,7 +319,7 @@ def plot_CP(fchain, namelist, composition='CO', name='CP.pdf', **kwargs):
                   'm1': r'$\rm{M_{1}~(M_{\odot})}$',
                   'm2': r'$\rm{M_{2}~(M_{\odot})}$',
                   'incl': r'$\rm{i~(deg)}$',
-                  't0': r'$\rm{\Delta T_{0}~(10^{-5}~d})$',
+                  't0': r'$\rm{\Delta T_{0}~(s)}$',
                   'parallax': r'$\rm{\pi~(mas)}$',
                   'ebv': r'$E(B-V)$',
                   'beta': r'$\beta$',
@@ -323,7 +329,7 @@ def plot_CP(fchain, namelist, composition='CO', name='CP.pdf', **kwargs):
     fchain_plot = fchain.copy()
     if 't0' in namelist:
         idx_t0 = namelist.index('t0')
-        fchain_plot[:, idx_t0] = (fchain_plot[:,idx_t0] - np.median(fchain_plot[:,idx_t0])) * 1e5
+        fchain_plot[:, idx_t0] = (fchain_plot[:,idx_t0] - np.median(fchain_plot[:,idx_t0])) * 86400
     fig = triangle.corner(fchain_plot, labels=labels, hist_bin_factor=2, label_kwargs={'fontsize': 14}, **kwargs)
     if composition == 'He' and _HE_TRACKS:
         idx_t1 = namelist.index('t1')
@@ -348,7 +354,7 @@ def plot_CP_reduced(fchain, namelist, composition='CO', name='CP.pdf', plotted_p
                   'm1': r'$\rm{M_{1}~(M_{\odot})}$',
                   'm2': r'$\rm{M_{2}~(M_{\odot})}$',
                   'incl': r'$i~\mathrm{(deg)}$',
-                  't0': r'$\rm{\Delta T_{0}~(10^{-5}~d})$',
+                  't0': r'$\rm{\Delta T_{0}~(s)}$',
                   'parallax': r'$\varpi~\mathrm{(mas)}$',
                   'ebv': r'$E(B-V)$',
                   'ln_prob': r'$\rm{ln}(p)$'
@@ -357,7 +363,7 @@ def plot_CP_reduced(fchain, namelist, composition='CO', name='CP.pdf', plotted_p
     fchain_plot = fchain.copy()
     if 't0' in namelist:
         idx_t0 = namelist.index('t0')
-        fchain_plot[:, idx_t0] = (fchain_plot[:,idx_t0] - np.median(fchain_plot[:,idx_t0])) * 1e5
+        fchain_plot[:, idx_t0] = (fchain_plot[:,idx_t0] - np.median(fchain_plot[:,idx_t0])) * 86400
     plot_param_idxs = [namelist.index(param) for param in plotted_params]
     fchain_plot_cut = fchain_plot[:,plot_param_idxs]
     # fig = plt.figure(figsize=(7, 8))
@@ -384,7 +390,7 @@ def plot_traces(chain, namelist, name="trace.pdf", dpi=300, **kwargs):
                   'm1': r'$\rm{M_{1}~(M_{\odot})}$',
                   'm2': r'$\rm{M_{2}~(M_{\odot})}$',
                   'incl': r'$\rm{i~(deg)}$',
-                  't0': r'$\rm{\Delta T_{0}~(10^{-5}~d})$',
+                  't0': r'$\rm{\Delta T_{0}~(s)}$',
                   'parallax': r'$\rm{\pi~(mas)}$',
                   'ebv': r'$E(B-V)$',
                   'ln_prob': r'$\rm{ln}(p)$'
@@ -395,7 +401,7 @@ def plot_traces(chain, namelist, name="trace.pdf", dpi=300, **kwargs):
     nsteps, nwalkers, npars = chain.shape
     for npar, ax in enumerate(axes):
         if namelist[npar] == 't0':
-            ax.plot((chain[:, :, npar] - np.median(chain[:,:,npar]))*1e5, color='k', alpha=0.1, **kwargs)
+            ax.plot((chain[:, :, npar] - np.median(chain[:,:,npar]))*86400, color='k', alpha=0.1, **kwargs)
         else:
             ax.plot(chain[:, :, npar], color='k', alpha=0.1, **kwargs)
         if namelist[npar] in label_dict:
